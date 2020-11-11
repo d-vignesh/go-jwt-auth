@@ -1,0 +1,100 @@
+package main 
+
+import (
+	"net/http"
+	"time"
+	"os"
+	"os/signal"
+	"context"
+
+	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-hclog"
+	"github.com/d-vignesh/go-jwt-auth/handlers"
+	"github.com/d-vignesh/go-jwt-auth/data"
+	"github.com/d-vignesh/go-jwt-auth/service"
+)
+
+const schema = `
+		create table if not exists users (
+			id varchar(36) not null,
+			email varchar(225) not null unique,
+			password varchar(225) not null,
+			primary key (id)
+		);
+`
+
+func main() {
+
+	logger := hclog.New(&hclog.LoggerOptions{
+			Name: "user-auth",
+			Level: hclog.LevelFromString("DEBUG"),
+	})
+
+	validator := data.NewValidation()
+
+	db, err := data.NewConnection()
+	if err != nil {
+		logger.Error("unable to connect to db", "error", err)
+		panic(err)
+	}
+	defer db.Close()
+	
+	db.MustExec(schema)
+
+	repository := data.NewPostgresRepository(db, logger)
+
+	authService := service.NewAuthService(logger)
+
+	uh := handlers.NewUserHandler(logger, validator, repository, authService)
+
+	// create a serve mux
+	sm := mux.NewRouter()
+
+	// register handlers
+	postR := sm.Methods(http.MethodPost).Subrouter()
+	postR.HandleFunc("/signup", uh.Signup)
+	postR.HandleFunc("/login", uh.Login)
+	postR.Use(uh.MiddlewareValidateUser)
+
+	refToken := sm.PathPrefix("/refresh-token").Subrouter()
+	refToken.HandleFunc("", uh.RefreshToken)
+	refToken.Use(uh.MiddlewareValidateRefreshToken)
+
+	getR := sm.Methods(http.MethodGet).Subrouter()
+	getR.HandleFunc("/greet", uh.Greet)
+	getR.Use(uh.MiddlewareValidateAccessToken)
+
+	// create a server
+	svr := http.Server{
+		Addr:	 	  ":9090",
+		Handler: 	  sm,
+		ErrorLog:	  logger.StandardLogger(&hclog.StandardLoggerOptions{}),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// start the server
+	go func() {
+		logger.Info("starting the server at port 9090")
+
+		err := svr.ListenAndServe()
+		if err != nil {
+			logger.Error("could not start the server", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("server serving at port 9090")
+	}()
+
+	// look for interrupts for graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
+
+	sig := <-c
+	logger.Info("shouting down the server", "received signal", sig)
+
+	//gracefully shutdown the server, waiting max 30 seconds for current operations to complete
+	ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
+	svr.Shutdown(ctx)
+}
