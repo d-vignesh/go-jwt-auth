@@ -11,6 +11,7 @@ import (
 // UserKey is used as a key for storing the User object in context at middleware
 type UserKey struct{}
 
+// UserIDKey is used as a key for storing the UserID in context at middleware
 type UserIDKey struct{}
 
 // UserHandler provides means to perform operations on user object

@@ -21,6 +21,7 @@ func NewAuthService(logger hclog.Logger) *AuthService {
 	return &AuthService{logger}
 }
 
+// Authenticate checks the user credentials in request against the db and authenticates the request
 func (auth *AuthService) Authenticate(reqUser *data.User, user *data.User) bool {
 
 	if reqUser.Email != user.Email {
@@ -34,6 +35,7 @@ func (auth *AuthService) Authenticate(reqUser *data.User, user *data.User) bool 
 	return true
 }
 
+// GenerateRefreshToken generate a new refresh token for the given user
 func (auth *AuthService) GenerateRefreshToken(user *data.User) (string, error) {
 
 	userID := user.ID 
@@ -41,7 +43,7 @@ func (auth *AuthService) GenerateRefreshToken(user *data.User) (string, error) {
 	cusKey := auth.GenerateCustomKey(userID, password)
 	tokenType := "refresh"
 
-	claims := RefreshCustomClaims {
+	claims := RefreshTokenCustomClaims {
 		userID,
 		cusKey,
 		tokenType,
@@ -54,12 +56,13 @@ func (auth *AuthService) GenerateRefreshToken(user *data.User) (string, error) {
 	return token.SignedString(JWT_SECRETE_KEY)
 }
 
+// GenerateAccessToken generates a new access token for the given user
 func (auth *AuthService) GenerateAccessToken(user *data.User) (string, error) {
 	
 	userID := user.ID
 	tokenType := "access"
 
-	claims := AccessCustomClaims {
+	claims := AccessTokenCustomClaims {
 		userID,
 		tokenType,
 		jwt.StandardClaims {
@@ -72,6 +75,8 @@ func (auth *AuthService) GenerateAccessToken(user *data.User) (string, error) {
 	return token.SignedString(JWT_SECRETE_KEY)
 }
 
+// GenerateCustomKey creates a new key for our jwt payload
+// the key is a hashed combination of the userID and password
 func (auth *AuthService) GenerateCustomKey(userID string, password string) string {
 
 	data := userID + password
@@ -81,9 +86,11 @@ func (auth *AuthService) GenerateCustomKey(userID string, password string) strin
 	return sha
 }
 
+// ValidateAccessToken parses and validates the given access token
+// returns the userId present in the token payload
 func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error) {
 
-	token, err := jwt.ParseWithClaims(tokenString, &AccessCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			auth.logger.Error("Unexpected signing method in auth token")
 			return nil, errors.New("Unexpected signing method in auth token")
@@ -96,16 +103,18 @@ func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error)
 		return "", err
 	}
 
-	claims, ok := token.Claims.(*AccessCustomClaims)
+	claims, ok := token.Claims.(*AccessTokenCustomClaims)
 	if !ok || !token.Valid || claims.UserID == "" || claims.KeyType != "access" {
 		return "" , errors.New("invalid token: authentication failed")
 	}
 	return claims.UserID, nil
 }
 
+// ValidateRefreshToken parses and validates the given refresh token
+// returns the userId and customkey present in the token payload
 func (auth *AuthService) ValidateRefreshToken(tokenString string) (string, string, error) {
 
-	token, err := jwt.ParseWithClaims(tokenString, &RefreshCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			auth.logger.Error("Unexpected signing method in auth token")
 			return nil, errors.New("Unexpected signing method in auth token")
@@ -118,7 +127,7 @@ func (auth *AuthService) ValidateRefreshToken(tokenString string) (string, strin
 		return "", "", err
 	}
 
-	claims, ok := token.Claims.(*RefreshCustomClaims)
+	claims, ok := token.Claims.(*RefreshTokenCustomClaims)
 	auth.logger.Debug("ok", ok)
 	if !ok || !token.Valid || claims.UserID == "" || claims.KeyType != "refresh" {
 		auth.logger.Debug("could not extract claims from token")

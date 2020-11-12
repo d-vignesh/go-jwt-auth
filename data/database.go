@@ -8,6 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// NewConnection creates the connection to the database
 func NewConnection() (*sqlx.DB, error) {
 	
 	host := os.Getenv("AUTH_DB_HOST")

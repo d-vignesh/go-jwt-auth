@@ -19,14 +19,14 @@ type Authentication interface {
 	ValidateRefreshToken(token string) (string, string, error)
 }
 
-type RefreshCustomClaims struct {
+type RefreshTokenCustomClaims struct {
 	UserID string
 	CustomKey string
 	KeyType string
 	jwt.StandardClaims
 }
 
-type AccessCustomClaims struct {
+type AccessTokenCustomClaims struct {
 	UserID string
 	KeyType string
 	jwt.StandardClaims

@@ -11,6 +11,7 @@ type ValidationError struct {
 	validator.FieldError
 }
 
+// provides the string format of the validation error
 func (v ValidationError) Error() string {
 	if v.Tag() == "required" {
 		return fmt.Sprintf("%s is required to create account", v.Field())
@@ -43,6 +44,8 @@ func NewValidation() *Validation {
 	return &Validation{validate}
 }
 
+// Validate method validates the given struct based on the validate tags
+// and returns validation error if any
 func (v *Validation) Validate(i interface{}) ValidationErrors {
 	errs := v.validate.Struct(i)
 	if errs == nil {

@@ -41,6 +41,8 @@ func (uh *UserHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
 	})
 }
 
+// MiddlewareValidateAccessToken validates whether the request contains a bearer token
+// it also decodes and authenticates the given token
 func (uh *UserHandler) MiddlewareValidateAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -71,6 +73,8 @@ func (uh *UserHandler) MiddlewareValidateAccessToken(next http.Handler) http.Han
 	})
 }
 
+// MiddlewareValidateAccessToken validates whether the request contains a bearer token
+// it also decodes and authenticates the given token
 func (uh *UserHandler) MiddlewareValidateRefreshToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uh.logger.Debug("validation refresh token")
