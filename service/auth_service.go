@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/d-vignesh/go-jwt-auth/data"
+	"github.com/d-vignesh/go-jwt-auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/hashicorp/go-hclog"
@@ -15,10 +16,11 @@ import (
 
 type AuthService struct{
 	logger hclog.Logger
+	configs *utils.Configurations
 }
 
-func NewAuthService(logger hclog.Logger) *AuthService {
-	return &AuthService{logger}
+func NewAuthService(logger hclog.Logger, configs *utils.Configurations) *AuthService {
+	return &AuthService{logger, configs}
 }
 
 // Authenticate checks the user credentials in request against the db and authenticates the request
@@ -53,7 +55,7 @@ func (auth *AuthService) GenerateRefreshToken(user *data.User) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(JWT_SECRETE_KEY)
+	return token.SignedString(auth.configs.RefreshTokenSecrete)
 }
 
 // GenerateAccessToken generates a new access token for the given user
@@ -66,13 +68,13 @@ func (auth *AuthService) GenerateAccessToken(user *data.User) (string, error) {
 		userID,
 		tokenType,
 		jwt.StandardClaims {
-			ExpiresAt: time.Now().Add(time.Minute * time.Duration(JWT_EXPIRATION)).Unix(),
+			ExpiresAt: time.Now().Add(time.Minute * time.Duration(auth.configs.JwtExpiration)).Unix(),
 			Issuer:    "bookite.auth.service",
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(JWT_SECRETE_KEY)
+	return token.SignedString(auth.configs.AccessTokenSecrete)
 }
 
 // GenerateCustomKey creates a new key for our jwt payload
@@ -80,7 +82,7 @@ func (auth *AuthService) GenerateAccessToken(user *data.User) (string, error) {
 func (auth *AuthService) GenerateCustomKey(userID string, password string) string {
 
 	data := userID + password
-	h := hmac.New(sha256.New, []byte(JWT_SECRETE_KEY))
+	h := hmac.New(sha256.New, []byte(auth.configs.CustomKeySecrete))
 	h.Write([]byte(data))
 	sha := hex.EncodeToString(h.Sum(nil))
 	return sha
@@ -95,7 +97,7 @@ func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error)
 			auth.logger.Error("Unexpected signing method in auth token")
 			return nil, errors.New("Unexpected signing method in auth token")
 		}
-		return JWT_SECRETE_KEY, nil
+		return auth.configs.AccessTokenSecrete, nil
 	})
 
 	if err != nil {
@@ -119,7 +121,7 @@ func (auth *AuthService) ValidateRefreshToken(tokenString string) (string, strin
 			auth.logger.Error("Unexpected signing method in auth token")
 			return nil, errors.New("Unexpected signing method in auth token")
 		}
-		return JWT_SECRETE_KEY, nil
+		return auth.configs.RefreshTokenSecrete, nil
 	})
 
 	if err != nil {

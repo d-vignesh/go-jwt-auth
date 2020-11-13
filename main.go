@@ -12,6 +12,7 @@ import (
 	"github.com/d-vignesh/go-jwt-auth/handlers"
 	"github.com/d-vignesh/go-jwt-auth/data"
 	"github.com/d-vignesh/go-jwt-auth/service"
+	"github.com/d-vignesh/go-jwt-auth/utils"
 )
 
 const schema = `
@@ -30,10 +31,12 @@ func main() {
 			Level: hclog.LevelFromString("DEBUG"),
 	})
 
+	configs := utils.NewConfigurations(logger)
+
 	// validator contains all the methods that are need to validate the user json in request
 	validator := data.NewValidation()
 
-	db, err := data.NewConnection()
+	db, err := data.NewConnection(configs)
 	if err != nil {
 		logger.Error("unable to connect to db", "error", err)
 		panic(err)
@@ -46,7 +49,7 @@ func main() {
 	repository := data.NewPostgresRepository(db, logger)
 
 	// authService contains all methods that help in authorizing a user request
-	authService := service.NewAuthService(logger)
+	authService := service.NewAuthService(logger, configs)
 
 	// UserHandler encapsulates all the services related to user
 	uh := handlers.NewUserHandler(logger, validator, repository, authService)
@@ -73,7 +76,7 @@ func main() {
 
 	// create a server
 	svr := http.Server{
-		Addr:	 	  ":9090",
+		Addr:	 	  configs.ServerPort,
 		Handler: 	  sm,
 		ErrorLog:	  logger.StandardLogger(&hclog.StandardLoggerOptions{}),
 		ReadTimeout:  5 * time.Second,

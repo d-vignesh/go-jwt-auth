@@ -12,5 +12,6 @@ require (
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 )
