@@ -88,5 +88,6 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	uh.logger.Debug("successfully generated token", "accesstoken", accessToken, "refreshtoken", refreshToken)
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	data.ToJSON(&TokenResponse{AccessToken: accessToken, RefreshToken: refreshToken}, w)
+	// data.ToJSON(&TokenResponse{AccessToken: accessToken, RefreshToken: refreshToken}, w)
+	data.ToJSON(&AuthResponse{AccessToken: accessToken, RefreshToken: refreshToken, Username: user.Username}, w)
 }

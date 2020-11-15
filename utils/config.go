@@ -23,11 +23,11 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	viper.SetEnvPrefix("USER_AUTH")
 	viper.AutomaticEnv()
 
-	viper.SetDefault("SERVER_PORT", ":9090")
+	viper.SetDefault("SERVER_PORT", "0.0.0.0:9090")
 	viper.SetDefault("DB_HOST", "localhost")
-	viper.SetDefault("DB_NAME", "db_name")
-	viper.SetDefault("DB_USER", "db_user")
-	viper.SetDefault("DB_PASSWORD", "db_password")
+	viper.SetDefault("DB_NAME", "bookite")
+	viper.SetDefault("DB_USER", "postgres")
+	viper.SetDefault("DB_PASSWORD", "Vickee@14")
 	viper.SetDefault("DB_PORT", "5432")
 	viper.SetDefault("ACCESS_JWT_SECRETE_KEY", "superSecretKeyForAccessToken")
 	viper.SetDefault("REFRESH_JWT_SECRETE_KEY", "superSecretKeyForRefreshToken")
@@ -51,6 +51,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	logger.Debug("db name", configs.DBName)
 	logger.Debug("db port", configs.DBPort)
 	logger.Debug("jwt expiration", configs.JwtExpiration)
+	logger.Debug("jwt access token secrete", configs.AccessTokenSecrete)
 
 	return configs
 }

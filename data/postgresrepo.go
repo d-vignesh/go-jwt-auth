@@ -20,8 +20,8 @@ func NewPostgresRepository(db *sqlx.DB, logger hclog.Logger) *PostgresRepository
 func (repo *PostgresRepository) Create(ctx context.Context, user *User) error {
 	user.ID = uuid.NewV4().String()
 	repo.logger.Info("creating user", hclog.Fmt("%#v", user))
-	query := "insert into users (id, email, password) values ($1, $2, $3)"
-	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Email, user.Password)
+	query := "insert into users (id, email, username, password) values ($1, $2, $3, $4)"
+	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Email, user.Username, user.Password)
 	return err
 }
 

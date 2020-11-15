@@ -1,0 +1,33 @@
+version: '3.1'
+
+services:
+
+  auth:
+    restart: always
+    build: ./auth
+    depends_on:
+      - database
+    links:
+      - database
+    ports:
+      - 9090:9090
+    environment:
+      USER_AUTH_DB_HOST: database
+      USER_AUTH_DB_USER: "admin"
+      USER_AUTH_DB_PASSWORD: "password"
+      USER_AUTH_DB_NAME: "postgres"
+      USER_AUTH_SERVER_PORT: "0.0.0.0:9090"
+      USER_AUTH_DB_PORT: "5432"
+      USER_AUTH_ACCESS_JWT_SECRETE_KEY: "superSecreteAccessToken"
+      USER_AUTH_REFRESH_JWT_SECRETE_KEY: "superSecreteRefreshToken"
+      USER_AUTH_JWT_EXPIRATION: 30
+      USER_AUTH_CUSTOM_KEY_SECRETE: "superSecreteCustomKey"
+  
+  database:
+    image: postgres:alpine
+    container_name: database
+    environment:
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_USER: "admin"
+    ports:
+      - 5432:5432
