@@ -87,7 +87,7 @@ func main() {
 
 	// start the server
 	go func() {
-		logger.Info("starting the server at port 9090")
+		logger.Info("starting the server at port", configs.ServerPort)
 
 		err := svr.ListenAndServe()
 		if err != nil {
