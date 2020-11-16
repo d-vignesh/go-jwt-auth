@@ -12,7 +12,6 @@ type Configurations struct {
 	DBUser  string
 	DBPass  string
 	DBPort  string	
-	DBUrl 	string
 	AccessTokenSecrete []byte
 	RefreshTokenSecrete []byte
 	JwtExpiration	int
@@ -24,6 +23,9 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	viper.SetEnvPrefix("USER_AUTH")
 	viper.AutomaticEnv()
 
+	logger.Debug("trying to fetch the database url")
+	logger.Debug(viper.GetString("DATABASE_URL"))
+	
 	viper.SetDefault("SERVER_PORT", "0.0.0.0:9090")
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_NAME", "bookite")
@@ -42,7 +44,6 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 		DBUser 	   : viper.GetString("DB_USER"),
 		DBPass	   : viper.GetString("DB_PASSWORD"),
 		DBPort	   : viper.GetString("DB_PORT"),
-		DBUrl 	   : viper.GetString("DATABASE_URL"),
 		AccessTokenSecrete : []byte(viper.GetString("ACCESS_JWT_SECRETE_KEY")),
 		RefreshTokenSecrete : []byte(viper.GetString("REFRESH_JWT_SECRETE_KEY")),
 		JwtExpiration	: viper.GetInt("JWT_EXPIRATION"),
