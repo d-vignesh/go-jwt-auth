@@ -42,7 +42,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	viper.SetDefault("CUSTOM_SECRETE_KEY", "superSecretKeyForCustomKey")
 
 	configs := &Configurations {
-		ServerPort : viper.GetString("PORT"),
+		ServerPort : ":" + viper.GetString("PORT"),
 		DBHost	   : viper.GetString("DB_HOST"),
 		DBName	   : viper.GetString("DB_NAME"),
 		DBUser 	   : viper.GetString("DB_USER"),
