@@ -25,8 +25,8 @@ func NewConnection(config *utils.Configurations, logger hclog.Logger) (*sqlx.DB,
 	password := config.DBPass 
 
 	conn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", host, port, user, dbName, password)
-	if config.DATABASE_URL != "" {
-		conn = pq.ParseURL(config.DATABASE_URL)
+	if config.DBUrl != "" {
+		conn = pq.ParseURL(config.DBUrl)
 		conn += " sslmode=disable"
 	}
 	logger.Debug("connection string", conn)
