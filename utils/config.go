@@ -12,6 +12,7 @@ type Configurations struct {
 	DBUser  string
 	DBPass  string
 	DBPort  string	
+	DBUrl 	string
 	AccessTokenSecrete []byte
 	RefreshTokenSecrete []byte
 	JwtExpiration	int
@@ -27,7 +28,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_NAME", "bookite")
 	viper.SetDefault("DB_USER", "postgres")
-	viper.SetDefault("DB_PASSWORD", "Vickee@14")
+	viper.SetDefault("DB_PASSWORD", "password")
 	viper.SetDefault("DB_PORT", "5432")
 	viper.SetDefault("ACCESS_JWT_SECRETE_KEY", "superSecretKeyForAccessToken")
 	viper.SetDefault("REFRESH_JWT_SECRETE_KEY", "superSecretKeyForRefreshToken")
@@ -41,6 +42,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 		DBUser 	   : viper.GetString("DB_USER"),
 		DBPass	   : viper.GetString("DB_PASSWORD"),
 		DBPort	   : viper.GetString("DB_PORT"),
+		DBUrl 	   : viper.GetString("DATABASE_URL"),
 		AccessTokenSecrete : []byte(viper.GetString("ACCESS_JWT_SECRETE_KEY")),
 		RefreshTokenSecrete : []byte(viper.GetString("REFRESH_JWT_SECRETE_KEY")),
 		JwtExpiration	: viper.GetInt("JWT_EXPIRATION"),
