@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/spf13/viper"
 	"github.com/hashicorp/go-hclog"
+	"github.com/lib/pq"
 )
 
 type Configurations struct {
@@ -11,7 +12,8 @@ type Configurations struct {
 	DBName  string
 	DBUser  string
 	DBPass  string
-	DBPort  string	
+	DBPort  string
+	DBConn  string	
 	AccessTokenSecrete []byte
 	RefreshTokenSecrete []byte
 	JwtExpiration	int
@@ -23,9 +25,11 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	viper.SetEnvPrefix("USER_AUTH")
 	viper.AutomaticEnv()
 
-	logger.Debug("trying to fetch the database url")
-	logger.Debug(viper.GetString("DATABASE_URL"))
-	
+	dbUrl := viper.GetString("DATABASE_URL")
+	conn, _ := pq.ParseURL(dbUrl)
+	logger.Debug("found database url in env, connection string is formed by parsing it")
+	logger.Debug("db connection string", conn)
+
 	viper.SetDefault("SERVER_PORT", "0.0.0.0:9090")
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_NAME", "bookite")
@@ -44,6 +48,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 		DBUser 	   : viper.GetString("DB_USER"),
 		DBPass	   : viper.GetString("DB_PASSWORD"),
 		DBPort	   : viper.GetString("DB_PORT"),
+		DBConn 	   : conn,
 		AccessTokenSecrete : []byte(viper.GetString("ACCESS_JWT_SECRETE_KEY")),
 		RefreshTokenSecrete : []byte(viper.GetString("REFRESH_JWT_SECRETE_KEY")),
 		JwtExpiration	: viper.GetInt("JWT_EXPIRATION"),
