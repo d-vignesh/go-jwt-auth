@@ -14,4 +14,5 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

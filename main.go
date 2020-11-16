@@ -37,7 +37,7 @@ func main() {
 	// validator contains all the methods that are need to validate the user json in request
 	validator := data.NewValidation()
 
-	db, err := data.NewConnection(configs)
+	db, err := data.NewConnection(configs, logger)
 	if err != nil {
 		logger.Error("unable to connect to db", "error", err)
 		panic(err)
