@@ -22,7 +22,7 @@ type Configurations struct {
 
 func NewConfigurations(logger hclog.Logger) *Configurations {
 
-	viper.SetEnvPrefix("USER_AUTH")
+	// viper.SetEnvPrefix("USER_AUTH")
 	viper.AutomaticEnv()
 
 	dbUrl := viper.GetString("DATABASE_URL")
@@ -30,7 +30,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	logger.Debug("found database url in env, connection string is formed by parsing it")
 	logger.Debug("db connection string", conn)
 
-	viper.SetDefault("SERVER_PORT", "0.0.0.0:9090")
+	viper.SetDefault("PORT", ":9090")
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_NAME", "bookite")
 	viper.SetDefault("DB_USER", "postgres")
@@ -42,7 +42,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 	viper.SetDefault("CUSTOM_SECRETE_KEY", "superSecretKeyForCustomKey")
 
 	configs := &Configurations {
-		ServerPort : viper.GetString("SERVER_PORT"),
+		ServerPort : viper.GetString("PORT"),
 		DBHost	   : viper.GetString("DB_HOST"),
 		DBName	   : viper.GetString("DB_NAME"),
 		DBUser 	   : viper.GetString("DB_USER"),
