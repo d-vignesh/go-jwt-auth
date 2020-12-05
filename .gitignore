@@ -1,0 +1,10 @@
+# binaries, plugins, libs
+*.dll
+*.dylib
+*.exe
+*.exe~
+*.so
+
+# testing
+*.test
+*.tmp

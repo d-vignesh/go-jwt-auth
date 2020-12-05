@@ -1,49 +1,52 @@
-package main 
+package main
 
 import (
+	"context"
 	"net/http"
-	"time"
 	"os"
 	"os/signal"
-	"context"
+	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/hashicorp/go-hclog"
-	"github.com/d-vignesh/go-jwt-auth/handlers"
 	"github.com/d-vignesh/go-jwt-auth/data"
+	"github.com/d-vignesh/go-jwt-auth/handlers"
 	"github.com/d-vignesh/go-jwt-auth/service"
 	"github.com/d-vignesh/go-jwt-auth/utils"
+	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-hclog"
 )
 
+// schema for user table
 const schema = `
 		create table if not exists users (
 			id varchar(36) not null,
 			email varchar(225) not null unique,
 			username varchar(225),
 			password varchar(225) not null,
+			tokenhash varchar(15) not null,
+			createdat timestamp not null,
+			updatedat timestamp not null,
 			primary key (id)
 		);
 `
 
 func main() {
 
-	logger := hclog.New(&hclog.LoggerOptions{
-			Name: "user-auth",
-			Level: hclog.LevelFromString("DEBUG"),
-	})
+	logger := utils.NewLogger()
 
 	configs := utils.NewConfigurations(logger)
 
 	// validator contains all the methods that are need to validate the user json in request
 	validator := data.NewValidation()
 
+	// create a new connection to the postgres db store
 	db, err := data.NewConnection(configs, logger)
 	if err != nil {
 		logger.Error("unable to connect to db", "error", err)
 		panic(err)
 	}
 	defer db.Close()
-	
+
+	// creation of user table.
 	db.MustExec(schema)
 
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
@@ -64,8 +67,8 @@ func main() {
 	postR.HandleFunc("/login", uh.Login)
 	postR.Use(uh.MiddlewareValidateUser)
 
-	// used the PathPrefix as workaround for scenarios where all the 
-	// get requests my use the ValidateAccessToken middleware except 
+	// used the PathPrefix as workaround for scenarios where all the
+	// get requests must use the ValidateAccessToken middleware except
 	// the /refresh-token request which has to use ValidateRefreshToken middleware
 	refToken := sm.PathPrefix("/refresh-token").Subrouter()
 	refToken.HandleFunc("", uh.RefreshToken)
@@ -75,11 +78,15 @@ func main() {
 	getR.HandleFunc("/greet", uh.Greet)
 	getR.Use(uh.MiddlewareValidateAccessToken)
 
+	putR := sm.Methods(http.MethodPut).Subrouter()
+	putR.HandleFunc("/update-username", uh.UpdateUsername)
+	putR.Use(uh.MiddlewareValidateAccessToken)
+
 	// create a server
 	svr := http.Server{
-		Addr:	 	  configs.ServerPort,
-		Handler: 	  sm,
-		ErrorLog:	  logger.StandardLogger(&hclog.StandardLoggerOptions{}),
+		Addr:         configs.ServerAddress,
+		Handler:      sm,
+		ErrorLog:     logger.StandardLogger(&hclog.StandardLoggerOptions{}),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
@@ -87,7 +94,7 @@ func main() {
 
 	// start the server
 	go func() {
-		logger.Info("starting the server at port", configs.ServerPort)
+		logger.Info("starting the server at port", configs.ServerAddress)
 
 		err := svr.ListenAndServe()
 		if err != nil {
@@ -105,6 +112,6 @@ func main() {
 	logger.Info("shutting down the server", "received signal", sig)
 
 	//gracefully shutdown the server, waiting max 30 seconds for current operations to complete
-	ctx, _ := context.WithTimeout(context.Background(), 30 * time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	svr.Shutdown(ctx)
 }

@@ -1,0 +1,3 @@
+Generate rsa private key : openssl genrsa -out jwtRSA256-private.pem 2048
+
+Export rsa public key : openssl rsa -in auth-private.pem -outform PEM -pubout -out auth-public.pem

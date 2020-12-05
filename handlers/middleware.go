@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
-	"errors"
 
 	"github.com/d-vignesh/go-jwt-auth/data"
 )
@@ -19,7 +19,7 @@ func (uh *UserHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
 		if err != nil {
 			uh.logger.Error("deserialization of user json failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: err.Error()}, w)
+			data.ToJSON(&GenericError{Error: err.Error()}, w)
 			return
 		}
 
@@ -28,7 +28,7 @@ func (uh *UserHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
 		if len(errs) != 0 {
 			uh.logger.Error("validation of user json failed", "error", errs)
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&ValidationError{Messages: errs.Errors()}, w)
+			data.ToJSON(&ValidationError{Errors: errs.Errors()}, w)
 			return
 		}
 
@@ -52,16 +52,16 @@ func (uh *UserHandler) MiddlewareValidateAccessToken(next http.Handler) http.Han
 		if err != nil {
 			uh.logger.Error("Token not provided or malformed")
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: err.Error()}, w)
+			data.ToJSON(&GenericError{Error: err.Error()}, w)
 			return
 		}
 		uh.logger.Debug("token present in header", token)
-		
+
 		userID, err := uh.authService.ValidateAccessToken(token)
 		if err != nil {
 			uh.logger.Error("token validation failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: err.Error()}, w)
+			data.ToJSON(&GenericError{Error: err.Error()}, w)
 			return
 		}
 		uh.logger.Debug("access token validated")
@@ -73,17 +73,17 @@ func (uh *UserHandler) MiddlewareValidateAccessToken(next http.Handler) http.Han
 	})
 }
 
-// MiddlewareValidateAccessToken validates whether the request contains a bearer token
+// MiddlewareValidateRefreshToken validates whether the request contains a bearer token
 // it also decodes and authenticates the given token
 func (uh *UserHandler) MiddlewareValidateRefreshToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		uh.logger.Debug("validation refresh token")
+		uh.logger.Debug("validating refresh token")
 		uh.logger.Debug("auth header", r.Header.Get("Authorization"))
 		token, err := extractToken(r)
 		if err != nil {
 			uh.logger.Error("token not provided or malformed")
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: err.Error()}, w)
+			data.ToJSON(&GenericError{Error: err.Error()}, w)
 			return
 		}
 		uh.logger.Debug("token present in header", token)
@@ -92,7 +92,7 @@ func (uh *UserHandler) MiddlewareValidateRefreshToken(next http.Handler) http.Ha
 		if err != nil {
 			uh.logger.Error("token validation failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: err.Error()}, w)
+			data.ToJSON(&GenericError{Error: err.Error()}, w)
 			return
 		}
 		uh.logger.Debug("refresh token validated")
@@ -101,15 +101,15 @@ func (uh *UserHandler) MiddlewareValidateRefreshToken(next http.Handler) http.Ha
 		if err != nil {
 			uh.logger.Error("invalid token: wrong userID while parsing", err)
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: "invalid token: authentication failed"}, w)
+			data.ToJSON(&GenericError{Error: "invalid token: authentication failed"}, w)
 			return
 		}
 
-		actualCustomKey := uh.authService.GenerateCustomKey(user.ID, user.Password)
+		actualCustomKey := uh.authService.GenerateCustomKey(user.ID, user.TokenHash)
 		if customKey != actualCustomKey {
 			uh.logger.Debug("wrong token: authetincation failed")
 			w.WriteHeader(http.StatusBadRequest)
-			data.ToJSON(&GenericError{Message: "invalid toke: authentication failed"}, w)
+			data.ToJSON(&GenericError{Error: "invalid token: authentication failed"}, w)
 			return
 		}
 
