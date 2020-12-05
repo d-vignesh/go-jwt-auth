@@ -67,6 +67,13 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 		RefreshTokenPublicKeyPath:  viper.GetString("REFRESH_TOKEN_PUBLIC_KEY_PATH"),
 	}
 
+	// reading heroku provided port to handle deployment with heroku
+	port := viper.GetString("PORT")
+	if port != nil {
+		logger.Debug("using the port allocated by heroku", port)
+		configs.ServerAddress = "0.0.0.0:" + port
+	}
+
 	logger.Debug("serve port", configs.ServerAddress)
 	logger.Debug("db host", configs.DBHost)
 	logger.Debug("db name", configs.DBName)
