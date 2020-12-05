@@ -69,7 +69,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 
 	// reading heroku provided port to handle deployment with heroku
 	port := viper.GetString("PORT")
-	if port != nil {
+	if port != "" {
 		logger.Debug("using the port allocated by heroku", port)
 		configs.ServerAddress = "0.0.0.0:" + port
 	}
