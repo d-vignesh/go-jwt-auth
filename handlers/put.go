@@ -9,12 +9,16 @@ import (
 
 // UpdateUsername handles username update request
 func (uh *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+
 	user := &data.User{}
 	err := data.FromJSON(user, r.Body)
 	if err != nil {
 		uh.logger.Error("unable to decode user json", "error", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
-		data.ToJSON(&GenericError{Error: err.Error()}, w)
+		// data.ToJSON(&GenericError{Error: err.Error()}, w)
+		data.ToJSON(&GenericResponse{Status: false, Message: err.Error()}, w)
 		return
 	}
 
@@ -25,10 +29,16 @@ func (uh *UserHandler) UpdateUsername(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		uh.logger.Error("unable to update username", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		data.ToJSON(&GenericError{Error: err.Error()}, w)
+		// data.ToJSON(&GenericError{Error: err.Error()}, w)
+		data.ToJSON(&GenericResponse{Status: false, Message: "Unable to update username. Please try again later"}, w)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	data.ToJSON(&UsernameUpdate{Username: user.Username}, w)
+	// data.ToJSON(&UsernameUpdate{Username: user.Username}, w)
+	data.ToJSON(&GenericResponse{
+		Status:  true,
+		Message: "Successfully updated username",
+		Data:    &UsernameUpdate{Username: user.Username},
+	}, w)
 }

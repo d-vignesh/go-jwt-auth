@@ -27,14 +27,21 @@ func NewUserHandler(l hclog.Logger, v *data.Validation, r data.Repository, authS
 	return &UserHandler{l, v, r, authService}
 }
 
-// GenericError wraps any generic error returned by server
-type GenericError struct {
-	Error string `json:"error"`
-}
+// // GenericError wraps any generic error returned by server
+// type GenericError struct {
+// 	Error string `json:"error"`
+// }
 
-// GenericMessage wraps any generic message returned by server
-type GenericMessage struct {
-	Message string `json:"message"`
+// // GenericMessage wraps any generic message returned by server
+// type GenericMessage struct {
+// 	Message string `json:"message"`
+// }
+
+// GenericResponse is the format of our response
+type GenericResponse struct {
+	Status  bool        `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 
 // ValidationError is a collection of validation error messages

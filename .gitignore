@@ -8,3 +8,6 @@
 # testing
 *.test
 *.tmp
+
+# token keys
+*.pem

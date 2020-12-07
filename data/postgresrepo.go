@@ -59,7 +59,7 @@ func (repo *PostgresRepository) GetUserByID(ctx context.Context, userID string) 
 func (repo *PostgresRepository) UpdateUsername(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
 
-	query := "update users set username = $1, updated_at = $2 where id = $3"
+	query := "update users set username = $1, updatedat = $2 where id = $3"
 	if _, err := repo.db.ExecContext(ctx, query, user.Username, user.UpdatedAt, user.ID); err != nil {
 		return err
 	}
