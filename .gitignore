@@ -9,5 +9,5 @@
 *.test
 *.tmp
 
-# token keys
-*.pem
+# # token keys
+# *.pem
