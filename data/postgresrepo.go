@@ -103,3 +103,12 @@ func (repo *PostgresRepository) DeleteVerificationData(ctx context.Context, emai
 	_, err := repo.db.ExecContext(ctx, query, email, verificationDataType)
 	return err
 }
+
+
+// UpdatePassword updates the user password
+func (repo *PostgresRepository) UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error {
+
+	query := "update users set password = $1, tokenhash = $2 where id = $3"
+	_, err := repo.db.ExecContext(ctx, query, password, tokenHash, userID)
+	return err
+}

@@ -19,17 +19,23 @@ func (ah *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	user := r.Context().Value(UserKey{}).(data.User)
-	hashedPass, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// hashedPass, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 
+	// if err != nil {
+	// 	ah.logger.Error("unable to hash password", "error", err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	// data.ToJSON(&GenericError{Error: err.Error()}, w)
+	// 	data.ToJSON(&GenericResponse{Status: false, Message: UserCreationFailed}, w)
+	// 	return
+	// }
+
+	hashedPass, err := ah.hashPassword(user.Password)
 	if err != nil {
-		ah.logger.Error("unable to hash password", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		// data.ToJSON(&GenericError{Error: err.Error()}, w)
 		data.ToJSON(&GenericResponse{Status: false, Message: UserCreationFailed}, w)
 		return
 	}
-
-	user.Password = string(hashedPass)
+	user.Password = hashedPass
 	user.TokenHash = utils.GenerateRandomString(15)
 
 	err = ah.repo.Create(context.Background(), &user)
@@ -86,6 +92,17 @@ func (ah *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	// data.ToJSON(&GenericMessage{Message: "user created successfully"}, w)
 	data.ToJSON(&GenericResponse{Status: true, Message: "Please verify your email account using the confirmation code send to your mail"}, w)
+}
+
+func (ah *AuthHandler) hashPassword(password string) (string, error) {
+
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		ah.logger.Error("unable to hash password", "error", err)
+		return "", err
+	}
+
+	return string(hashedPass), nil
 }
 
 // Login handles login request
@@ -193,6 +210,12 @@ func (ah *AuthHandler) VerifyMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// delete the VerificationData from db
+	err = ah.repo.DeleteVerificationData(context.Background(), verificationData.Email, verificationData.Type)
+	if err != nil {
+		ah.logger.Error("unable to delete the verification data", "error", err)
+	}
+
 	ah.logger.Debug("user mail verification succeeded")
 
 	w.WriteHeader(http.StatusAccepted)
@@ -228,9 +251,15 @@ func (ah *AuthHandler) VerifyPasswordReset(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	respData := struct{
+		Code string
+	}{
+		Code: verificationData.Code,
+	}
+
 	ah.logger.Debug("password reset code verification succeeded")
 	w.WriteHeader(http.StatusAccepted)
-	data.ToJSON(&GenericResponse{Status: true, Message: "Password Reset code verification succeeded"}, w)
+	data.ToJSON(&GenericResponse{Status: true, Message: "Password Reset code verification succeeded", Data: respData,}, w)
 }
 
 func (ah *AuthHandler) verify(actualVerificationData *data.VerificationData, verificationData *data.VerificationData) (bool, error) {
@@ -246,12 +275,6 @@ func (ah *AuthHandler) verify(actualVerificationData *data.VerificationData, ver
 	if actualVerificationData.Code != verificationData.Code {
 		ah.logger.Error("verification of mail failed. Invalid verification code provided")
 		return false, errors.New("Verification code provided is Invalid. Please look in your mail for the code")
-	}
-
-	// delete the VerificationData from db
-	err := ah.repo.DeleteVerificationData(context.Background(), verificationData.Email, verificationData.Type)
-	if err != nil {
-		ah.logger.Error("unable to delete the verification data", "error", err)
 	}
 
 	return true, nil

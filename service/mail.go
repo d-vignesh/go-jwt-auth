@@ -8,6 +8,7 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
+// MailService represents the interface for our mail service.
 type MailService interface {
 	CreateMail(mailReq *Mail) []byte
 	SendMail(mailReq *Mail) error
@@ -16,16 +17,19 @@ type MailService interface {
 
 type MailType int
 
+// List of Mail Types we are going to send.
 const (
 	MailConfirmation MailType = iota + 1
 	PassReset
 )
 
+// MailData represents the data to be sent to the template of the mail.
 type MailData struct {
 	Username string
 	Code	 string
 }
 
+// Mail represents a email request
 type Mail struct {
 	from  string
 	to    []string
@@ -35,15 +39,19 @@ type Mail struct {
 	data *MailData
 }
 
+// SGMailService is the sendgrid implementation of our MailService.
 type SGMailService struct {
 	logger  hclog.Logger
 	configs *utils.Configurations
 }
 
+// NewSGMailService returns a new instance of SGMailService
 func NewSGMailService(logger hclog.Logger, configs *utils.Configurations) *SGMailService {
 	return &SGMailService{logger, configs}
 }
 
+
+// CreateMail takes in a mail request and constructs a sendgrid mail type.
 func (ms *SGMailService) CreateMail(mailReq *Mail) []byte {
 
 	m := mail.NewV3Mail()
@@ -73,6 +81,7 @@ func (ms *SGMailService) CreateMail(mailReq *Mail) []byte {
 	return mail.GetRequestBody(m)
 }
 
+// SendMail creates a sendgrid mail from the given mail request and sends it.
 func (ms *SGMailService) SendMail(mailReq *Mail) error {
 
 	request := sendgrid.GetRequest(ms.configs.SendGridApiKey, "/v3/mail/send", "https://api.sendgrid.com")
@@ -88,6 +97,7 @@ func (ms *SGMailService) SendMail(mailReq *Mail) error {
 	return nil
 }
 
+// NewMail returns a new mail request.
 func (ms *SGMailService) NewMail(from string, to []string, subject string, mailType MailType, data *MailData) *Mail {
 	return &Mail{
 		from: 	 from,

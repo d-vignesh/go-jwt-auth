@@ -73,6 +73,12 @@ type CodeVerificationReq struct {
 	Type string `json" "type"`
 }
 
+type PasswordResetReq struct {
+	Password string `json: "password"`
+	PasswordRe string `json: "password_re"`
+	Code 		string `json: "code"`
+}
+
 var ErrUserAlreadyExists = fmt.Sprintf("User already exists with the given email")
 var ErrUserNotFound = fmt.Sprintf("No user account exists with given email. Please sign in first")
 var UserCreationFailed = fmt.Sprintf("Unable to create user.Please try again later")

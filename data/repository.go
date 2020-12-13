@@ -14,4 +14,5 @@ type Repository interface {
 	GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error)
 	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
 	DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error
+	UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error
 }

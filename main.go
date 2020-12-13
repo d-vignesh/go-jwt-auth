@@ -104,6 +104,7 @@ func main() {
 
 	putR := sm.Methods(http.MethodPut).Subrouter()
 	putR.HandleFunc("/update-username", uh.UpdateUsername)
+	putR.HandleFunc("/reset-password", uh.ResetPassword)
 	putR.Use(uh.MiddlewareValidateAccessToken)
 
 	// create a server

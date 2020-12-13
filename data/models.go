@@ -23,6 +23,7 @@ const (
 	PassReset
 )
 
+// VerificationData represents the type for the data stored for verification.
 type VerificationData struct {
 	Email     string    `json:"email" validate:"required" sql:"email"`
 	Code      string    `json:"code" validate:"required" sql:"code"`
