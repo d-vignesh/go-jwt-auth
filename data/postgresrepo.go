@@ -65,3 +65,41 @@ func (repo *PostgresRepository) UpdateUsername(ctx context.Context, user *User) 
 	}
 	return nil
 }
+
+// UpdateUserVerificationStatus updates user verification status to true
+func (repo *PostgresRepository) UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error {
+
+	query := "update users set isverified = $1 where email = $2"
+	if _, err := repo.db.ExecContext(ctx, query, status, email); err != nil {
+		return err
+	}
+	return nil
+}
+
+// StoreMailVerificationData adds a mail verification data to db
+func (repo *PostgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData) error {
+
+	query := "insert into verifications(email, code, expiresat, type) values($1, $2, $3, $4)"
+	_, err := repo.db.ExecContext(ctx, query, verificationData.Email, verificationData.Code, verificationData.ExpiresAt, verificationData.Type)
+	return err
+}
+
+// GetMailVerificationCode retrieves the stored verification code.
+func (repo *PostgresRepository) GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error) {
+
+	query := "select * from verifications where email = $1 and type = $2"
+	
+	var verificationData VerificationData
+	if err := repo.db.GetContext(ctx, &verificationData, query, email, verificationDataType); err != nil {
+		return nil, err
+	}
+	return &verificationData, nil
+}
+
+// DeleteMailVerificationData deletes a used verification data
+func (repo *PostgresRepository) DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error {
+
+	query := "delete from verifications where email = $1 and type = $2"
+	_, err := repo.db.ExecContext(ctx, query, email, verificationDataType)
+	return err
+}

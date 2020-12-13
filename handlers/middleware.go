@@ -10,17 +10,17 @@ import (
 )
 
 // MiddlewareValidateUser validates the user in the request
-func (uh *UserHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
+func (ah *AuthHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		uh.logger.Debug("user json", r.Body)
+		ah.logger.Debug("user json", r.Body)
 		user := &data.User{}
 
 		err := data.FromJSON(user, r.Body)
 		if err != nil {
-			uh.logger.Error("deserialization of user json failed", "error", err)
+			ah.logger.Error("deserialization of user json failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			// data.ToJSON(&GenericError{Error: err.Error()}, w)
 			data.ToJSON(&GenericResponse{Status: false, Message: err.Error()}, w)
@@ -28,9 +28,9 @@ func (uh *UserHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
 		}
 
 		// validate the user
-		errs := uh.validator.Validate(user)
+		errs := ah.validator.Validate(user)
 		if len(errs) != 0 {
-			uh.logger.Error("validation of user json failed", "error", errs)
+			ah.logger.Error("validation of user json failed", "error", errs)
 			w.WriteHeader(http.StatusBadRequest)
 			// data.ToJSON(&ValidationError{Errors: errs.Errors()}, w)
 			data.ToJSON(&GenericResponse{Status: false, Message: strings.Join(errs.Errors(), ",")}, w)
@@ -48,32 +48,32 @@ func (uh *UserHandler) MiddlewareValidateUser(next http.Handler) http.Handler {
 
 // MiddlewareValidateAccessToken validates whether the request contains a bearer token
 // it also decodes and authenticates the given token
-func (uh *UserHandler) MiddlewareValidateAccessToken(next http.Handler) http.Handler {
+func (ah *AuthHandler) MiddlewareValidateAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		uh.logger.Debug("validating access token")
+		ah.logger.Debug("validating access token")
 
 		token, err := extractToken(r)
 		if err != nil {
-			uh.logger.Error("Token not provided or malformed")
+			ah.logger.Error("Token not provided or malformed")
 			w.WriteHeader(http.StatusBadRequest)
 			// data.ToJSON(&GenericError{Error: err.Error()}, w)
 			data.ToJSON(&GenericResponse{Status: false, Message: "Authentication failed. Token not provided or malformed"}, w)
 			return
 		}
-		uh.logger.Debug("token present in header", token)
+		ah.logger.Debug("token present in header", token)
 
-		userID, err := uh.authService.ValidateAccessToken(token)
+		userID, err := ah.authService.ValidateAccessToken(token)
 		if err != nil {
-			uh.logger.Error("token validation failed", "error", err)
+			ah.logger.Error("token validation failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			// data.ToJSON(&GenericError{Error: err.Error()}, w)
 			data.ToJSON(&GenericResponse{Status: false, Message: "Authentication failed. Invalid token"}, w)
 			return
 		}
-		uh.logger.Debug("access token validated")
+		ah.logger.Debug("access token validated")
 
 		ctx := context.WithValue(r.Context(), UserIDKey{}, userID)
 		r = r.WithContext(ctx)
@@ -84,49 +84,83 @@ func (uh *UserHandler) MiddlewareValidateAccessToken(next http.Handler) http.Han
 
 // MiddlewareValidateRefreshToken validates whether the request contains a bearer token
 // it also decodes and authenticates the given token
-func (uh *UserHandler) MiddlewareValidateRefreshToken(next http.Handler) http.Handler {
+func (ah *AuthHandler) MiddlewareValidateRefreshToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		uh.logger.Debug("validating refresh token")
-		uh.logger.Debug("auth header", r.Header.Get("Authorization"))
+		ah.logger.Debug("validating refresh token")
+		ah.logger.Debug("auth header", r.Header.Get("Authorization"))
 		token, err := extractToken(r)
 		if err != nil {
-			uh.logger.Error("token not provided or malformed")
+			ah.logger.Error("token not provided or malformed")
 			w.WriteHeader(http.StatusBadRequest)
 			data.ToJSON(&GenericResponse{Status: false, Message: "Authentication failed. Token not provided or malformed"}, w)
 			return
 		}
-		uh.logger.Debug("token present in header", token)
+		ah.logger.Debug("token present in header", token)
 
-		userID, customKey, err := uh.authService.ValidateRefreshToken(token)
+		userID, customKey, err := ah.authService.ValidateRefreshToken(token)
 		if err != nil {
-			uh.logger.Error("token validation failed", "error", err)
+			ah.logger.Error("token validation failed", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			data.ToJSON(&GenericResponse{Status: false, Message: "Authentication failed. Invalid token"}, w)
 			return
 		}
-		uh.logger.Debug("refresh token validated")
+		ah.logger.Debug("refresh token validated")
 
-		user, err := uh.repo.GetUserByID(context.Background(), userID)
+		user, err := ah.repo.GetUserByID(context.Background(), userID)
 		if err != nil {
-			uh.logger.Error("invalid token: wrong userID while parsing", err)
+			ah.logger.Error("invalid token: wrong userID while parsing", err)
 			w.WriteHeader(http.StatusBadRequest)
 			// data.ToJSON(&GenericError{Error: "invalid token: authentication failed"}, w)
 			data.ToJSON(&GenericResponse{Status: false, Message: "Unable to fetch corresponding user"}, w)
 			return
 		}
 
-		actualCustomKey := uh.authService.GenerateCustomKey(user.ID, user.TokenHash)
+		actualCustomKey := ah.authService.GenerateCustomKey(user.ID, user.TokenHash)
 		if customKey != actualCustomKey {
-			uh.logger.Debug("wrong token: authetincation failed")
+			ah.logger.Debug("wrong token: authetincation failed")
 			w.WriteHeader(http.StatusBadRequest)
 			data.ToJSON(&GenericResponse{Status: false, Message: "Authentication failed. Invalid token"}, w)
 			return
 		}
 
 		ctx := context.WithValue(r.Context(), UserKey{}, *user)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// MiddlerwareValidateVerificationData validates whether the request contains the email 
+// and confirmation code that are required for the verification
+func (ah *AuthHandler) MiddlewareValidateVerificationData(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		
+		w.Header().Set("Content-Type", "application/json")
+		ah.logger.Debug("validating verification data")
+
+		verificationData := &data.VerificationData{}
+
+		err := data.FromJSON(verificationData, r.Body)
+		if err != nil {
+			ah.logger.Error("deserialization of verification data failed", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			data.ToJSON(&GenericResponse{Status: false, Message: err.Error()}, w)
+			return
+		}
+
+		errs := ah.validator.Validate(verificationData)
+		if len(errs) != 0 {
+			ah.logger.Error("validation of verification data json failed", "error", errs)
+			w.WriteHeader(http.StatusBadRequest)
+			data.ToJSON(&GenericResponse{Status: false, Message: strings.Join(errs.Errors(), ",")}, w)
+			return
+		}
+
+		// add the ValidationData to context
+		ctx := context.WithValue(r.Context(), VerificationDataKey{}, *verificationData)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

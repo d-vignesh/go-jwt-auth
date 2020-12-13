@@ -15,7 +15,7 @@ type ValidationError struct {
 // Error provides the string format of the validation error
 func (v ValidationError) Error() string {
 	if v.Tag() == "required" {
-		return fmt.Sprintf("%s is required to create account", v.Field())
+		return fmt.Sprintf("%s is required", v.Field())
 	}
 
 	return fmt.Sprintf(

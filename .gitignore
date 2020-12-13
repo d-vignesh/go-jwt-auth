@@ -1,13 +1,2 @@
-# binaries, plugins, libs
-*.dll
-*.dylib
-*.exe
-*.exe~
-*.so
-
-# testing
-*.test
-*.tmp
-
-# # token keys
-# *.pem
+sendgrid.env
+sendgrid.env

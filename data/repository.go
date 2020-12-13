@@ -10,4 +10,8 @@ type Repository interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, userID string) (*User, error)
 	UpdateUsername(ctx context.Context, user *User) error
+	StoreVerificationData(ctx context.Context, verificationData *VerificationData) error
+	GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error)
+	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
+	DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error
 }
