@@ -16,17 +16,30 @@ import (
 )
 
 // schema for user table
-const schema = `
+const userSchema = `
 		create table if not exists users (
-			id varchar(36) not null,
-			email varchar(225) not null unique,
-			username varchar(225),
-			password varchar(225) not null,
-			tokenhash varchar(15) not null,
-			createdat timestamp not null,
-			updatedat timestamp not null,
-			primary key (id)
+			id 		   Varchar(36) not null,
+			email 	   Varchar(100) not null unique,
+			username   Varchar(225),
+			password   Varchar(225) not null,
+			tokenhash  Varchar(15) not null,
+			isverified Boolean default false,
+			createdat  Timestamp not null,
+			updatedat  Timestamp not null,
+			Primary Key (id)
 		);
+`
+
+const verificationSchema = `
+		create table if not exists verifications (
+			email 		Varchar(100) not null,
+			code  		Varchar(10) not null,
+			expiresat 	Timestamp not null,
+			type        Varchar(10) not null,
+			Primary Key (email),
+			Constraint fk_user_email Foreign Key(email) References users(email)
+				On Delete Cascade On Update Cascade
+		)
 `
 
 func main() {
@@ -47,7 +60,8 @@ func main() {
 	defer db.Close()
 
 	// creation of user table.
-	db.MustExec(schema)
+	db.MustExec(userSchema)
+	db.MustExec(verificationSchema)
 
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
 	repository := data.NewPostgresRepository(db, logger)
@@ -55,14 +69,23 @@ func main() {
 	// authService contains all methods that help in authorizing a user request
 	authService := service.NewAuthService(logger, configs)
 
+	// mailService contains the utility methods to send an email
+	mailService := service.NewSGMailService(logger, configs)
+
 	// UserHandler encapsulates all the services related to user
-	uh := handlers.NewUserHandler(logger, validator, repository, authService)
+	uh := handlers.NewAuthHandler(logger, configs, validator, repository, authService, mailService)
 
 	// create a serve mux
 	sm := mux.NewRouter()
 
 	// register handlers
 	postR := sm.Methods(http.MethodPost).Subrouter()
+
+	mailR := sm.PathPrefix("/verify").Methods(http.MethodPost).Subrouter()
+	mailR.HandleFunc("/mail", uh.VerifyMail)
+	mailR.HandleFunc("/password-reset", uh.VerifyPasswordReset)
+	mailR.Use(uh.MiddlewareValidateVerificationData)
+
 	postR.HandleFunc("/signup", uh.Signup)
 	postR.HandleFunc("/login", uh.Login)
 	postR.Use(uh.MiddlewareValidateUser)
@@ -76,6 +99,7 @@ func main() {
 
 	getR := sm.Methods(http.MethodGet).Subrouter()
 	getR.HandleFunc("/greet", uh.Greet)
+	getR.HandleFunc("/get-password-reset-code", uh.GeneratePassResetCode)
 	getR.Use(uh.MiddlewareValidateAccessToken)
 
 	putR := sm.Methods(http.MethodPut).Subrouter()
