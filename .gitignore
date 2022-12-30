@@ -1,2 +1,4 @@
-sendgrid.env
-sendgrid.env
+# Environment
+*.env 
+*.pem
+*.log
